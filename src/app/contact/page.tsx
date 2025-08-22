@@ -25,10 +25,10 @@ export default function ContactPage() {
             Contact Us
           </div>
           <h1 className="text-hero mb-6 text-foreground max-w-4xl mx-auto">
-            We'd love to hear from you
+            We would love to hear from you
           </h1>
           <p className="text-subtitle text-muted-foreground max-w-2xl mx-auto">
-            Have a question about InterviewHub or want to see a demo? Send us a message and we'll respond shortly.
+            Have a question about InterviewHub or want to see a demo? Send us a message and we will respond shortly.
           </p>
         </section>
 
@@ -42,7 +42,7 @@ export default function ContactPage() {
               {submitted ? (
                 <div className="rounded-xl border border-accent/20 bg-accent/10 p-6 text-left">
                   <p className="text-foreground font-medium mb-2">Thanks for reaching out!</p>
-                  <p className="text-muted-foreground">We'll be in touch soon at {formState.email}.</p>
+                  <p className="text-muted-foreground">We will be in touch soon at {formState.email}.</p>
                 </div>
               ) : (
                 <form onSubmit={onSubmit} className="space-y-6">
@@ -118,7 +118,7 @@ export default function ContactPage() {
             <Card className="border-0 bg-card/60 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-xl">Office hours</CardTitle>
-                <CardDescription>We're available Monday to Friday.</CardDescription>
+                <CardDescription>We are available Monday to Friday.</CardDescription>
               </CardHeader>
               <CardContent className="text-muted-foreground">
                 9:00 AM – 6:00 PM PST

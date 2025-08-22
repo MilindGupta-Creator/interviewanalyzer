@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Upload, FileAudio, FileVideo, CheckCircle } from "lucide-react"
@@ -10,6 +11,11 @@ import { Upload, FileAudio, FileVideo, CheckCircle } from "lucide-react"
 export function UploadCard() {
   const [isDragOver, setIsDragOver] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [username, setUsername] = useState("")
+  const isUsernameMissing = username.trim() === ""
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+  const router = useRouter()
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -45,6 +51,47 @@ export function UploadCard() {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const handleProcess = async () => {
+    if (uploadedFiles.length === 0 || isUsernameMissing) return
+    setIsProcessing(true)
+    setApiError(null)
+    try {
+      const form = new FormData()
+      form.append("username", username.trim())
+      uploadedFiles.forEach((file) => form.append("files", file))
+
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        body: form,
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || "Failed to analyze files")
+      }
+      const data = await res.json()
+      try {
+        const toStore = {
+          interviewee: {
+            whatWentWell: data?.interviewee?.whatWentWell ?? [],
+            whatCouldImprove: data?.interviewee?.whatCouldImprove ?? [],
+            actionableTips: data?.interviewee?.actionableTips ?? [],
+          },
+          recruiter: {
+            areasMissed: data?.recruiter?.areasMissed ?? [],
+            suggestedQuestions: data?.recruiter?.suggestedQuestions ?? [],
+          },
+        }
+        localStorage.setItem("analysis", JSON.stringify(toStore))
+      } catch {}
+      router.push(`/results?username=${encodeURIComponent(username.trim())}`)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong"
+      setApiError(errorMessage)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-lg border-0 bg-card">
       <CardHeader className="text-center pb-8">
@@ -56,6 +103,24 @@ export function UploadCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
+        <div className="space-y-2">
+          <label htmlFor="username" className="text-sm font-medium text-foreground">Username</label>
+          <input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter username"
+            aria-invalid={uploadedFiles.length > 0 && isUsernameMissing}
+            aria-describedby={uploadedFiles.length > 0 && isUsernameMissing ? "username-error" : undefined}
+            className={`w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${uploadedFiles.length > 0 && isUsernameMissing ? "border-destructive focus:ring-destructive" : "border-input focus:ring-accent"}`}
+          />
+          {uploadedFiles.length > 0 && isUsernameMissing && (
+            <p id="username-error" className="text-sm text-destructive">Please enter a username to proceed.</p>
+          )}
+        </div>
+
+        
         <div
           className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
             isDragOver
@@ -120,18 +185,30 @@ export function UploadCard() {
         <div className="flex flex-col sm:flex-row gap-4 pt-4">
           <Button
             className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-medium py-6 text-lg"
-            disabled={uploadedFiles.length === 0}
+            disabled={uploadedFiles.length === 0 || isUsernameMissing || isProcessing}
+            onClick={handleProcess}
+            aria-busy={isProcessing}
           >
-            Process Files
+            {isProcessing ? "Processing..." : "Process Files"}
           </Button>
           <Button
             variant="outline"
             className="flex-1 border-border hover:bg-muted/50 font-medium py-6 text-lg bg-transparent"
-            onClick={() => setUploadedFiles([])}
+            onClick={() => {
+              setUploadedFiles([])
+              setApiError(null)
+            }}
           >
             Clear All
           </Button>
         </div>
+
+        {apiError && (
+          <div className="text-sm text-destructive text-center bg-destructive/10 rounded-lg p-3 border border-destructive/30">
+            {apiError}
+          </div>
+        )}
+
 
         <div className="text-sm text-muted-foreground text-center bg-muted/30 rounded-lg p-4">
           <strong>Supported formats:</strong> MP3, WAV, MP4, MOV, AVI • <strong>Max file size:</strong> 100MB

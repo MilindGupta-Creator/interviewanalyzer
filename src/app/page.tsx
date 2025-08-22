@@ -42,6 +42,18 @@ export default function HomePage() {
           </div>
         </div>
 
+        <div className="w-full max-w-3xl aspect-video rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-transparent mx-auto">
+          <iframe
+            className="w-full h-full"
+            src="https://www.youtube.com/embed/l5gOz9jan9c"
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+
         <UploadCard />
       </main>
     </div>
