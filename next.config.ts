@@ -4,11 +4,26 @@ const nextConfig: NextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@google/generative-ai'],
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-    responseLimit: false,
+  async headers() {
+    return [
+      {
+        source: '/api/analyze',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'POST, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type',
+          },
+        ],
+      },
+    ];
   },
 };
 

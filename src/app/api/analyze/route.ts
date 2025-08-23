@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic"
 
 // Configure for larger payloads
 export const maxDuration = 300 // 5 minutes
-export const bodySizeLimit = '50mb'
 
 function toBase64(buffer: ArrayBuffer): string {
   const bytes = Buffer.from(buffer)
