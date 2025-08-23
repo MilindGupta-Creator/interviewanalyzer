@@ -4,9 +4,39 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+// Configure for larger payloads
+export const maxDuration = 300 // 5 minutes
+export const bodySizeLimit = '50mb'
+
 function toBase64(buffer: ArrayBuffer): string {
   const bytes = Buffer.from(buffer)
   return bytes.toString("base64")
+}
+
+// Helper function to process large files more efficiently
+async function processFileEfficiently(file: File): Promise<string> {
+  const CHUNK_SIZE = 1024 * 1024 // 1MB chunks
+  const chunks: Uint8Array[] = []
+  
+  let offset = 0
+  while (offset < file.size) {
+    const chunk = file.slice(offset, offset + CHUNK_SIZE)
+    const arrayBuffer = await chunk.arrayBuffer()
+    chunks.push(new Uint8Array(arrayBuffer))
+    offset += CHUNK_SIZE
+  }
+  
+  // Combine chunks and convert to base64
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+  const combined = new Uint8Array(totalLength)
+  let position = 0
+  
+  for (const chunk of chunks) {
+    combined.set(chunk, position)
+    position += chunk.length
+  }
+  
+  return Buffer.from(combined).toString("base64")
 }
 
 export async function POST(req: NextRequest) {
@@ -27,18 +57,36 @@ export async function POST(req: NextRequest) {
       return new Response("No files uploaded", { status: 400 })
     }
 
+    // Check file sizes before processing
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        return new Response(`File ${file.name} is too large. Maximum size is 50MB.`, { status: 413 })
+      }
+    }
+
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
     const parts: Array<{ inlineData: { data: string; mimeType: string } }> = []
+    
+    // Process files more efficiently for large files
     for (const file of files) {
-      const arrayBuffer = await file.arrayBuffer()
-      const base64 = toBase64(arrayBuffer)
+      console.log(`Processing file: ${file.name}, size: ${file.size} bytes`)
+      
+      let base64: string
+      if (file.size > 10 * 1024 * 1024) { // If file is larger than 10MB
+        base64 = await processFileEfficiently(file)
+      } else {
+        const arrayBuffer = await file.arrayBuffer()
+        base64 = toBase64(arrayBuffer)
+      }
+      
       const mimeType = file.type || "application/octet-stream"
       parts.push({ inlineData: { data: base64, mimeType } })
     }
 
-    const prompt = `You are a brutally honest interview coach. Analyze the provided interview media and generate detailed, critical feedback for BOTH the interviewee and the recruiter.
+    const prompt = `You are a brutally honest interview coach . Analyze the provided interview media and generate detailed, critical feedback for BOTH the interviewee and the recruiter.
 Return strict JSON matching this TypeScript type:
 type Analysis = {
   interviewee: {
