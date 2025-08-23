@@ -1,3 +1,7 @@
+Project Demo Video link
+
+https://www.loom.com/share/f0091efc60c74415a4b96d7bc4dc2f12?sid=a19018ee-a938-4500-baff-a1e08d3b866b,  
+
 # Interview Insights AI 🎤🤖
 
 AI-powered interview analysis tool built with **Next.js, Tailwind CSS, and Shadcn UI**.  
